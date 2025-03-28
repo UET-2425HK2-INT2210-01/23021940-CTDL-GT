@@ -1,0 +1,149 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+// Lớp Node để đại diện cho các node trong cây
+class Node {
+public:
+    int data;  // Dữ liệu của node
+    Node* firstChild;  // Con đầu tiên của node
+    Node* nextSibling;  // Con tiếp theo của node
+
+    // Hàm khởi tạo node
+    Node(int value) {
+        data = value;
+        firstChild = nullptr;  // Chưa có con
+        nextSibling = nullptr;  // Chưa có con tiếp theo 
+    }
+};
+
+// Lớp Tree để đại diện cho cây
+class Tree {
+public:
+    Node* root;  // Con trỏ tới node gốc của cây
+    vector<Node*> nodeList;  // Danh sách các node trong cây
+    vector<bool> isChild;  // Mảng kiểm tra xem một node có phải là con của node khác không
+
+    // Hàm khởi tạo cây
+    Tree() {
+        root = nullptr;  // Ban đầu không có gốc
+    }
+
+    // Cập nhật gốc của cây khi node gốc chưa được xác định (khi node gốc được khai báo sau node khác)
+    void updateRoot() {
+        for (int i = 0; i < nodeList.size(); i++) {
+            if (nodeList[i] != nullptr && !isChild[i]) {
+                root = nodeList[i];  // Cập nhật gốc là node không phải là con của node nào
+                break;  // Dừng lại ngay khi tìm thấy gốc
+            }
+        }
+    }
+
+    // Hàm thêm node vào cây: kết nối một node con với node cha
+    void addNode(int parent, int child) {
+        // Resize nodeList và isChild nếu cần thiết
+        if (parent >= nodeList.size()) nodeList.resize(parent + 1, nullptr);
+        if (child >= nodeList.size()) nodeList.resize(child + 1, nullptr);
+        if (parent >= isChild.size()) isChild.resize(parent + 1, false);
+        if (child >= isChild.size()) isChild.resize(child + 1, false);
+
+        // Tạo node mới nếu chưa có node cha hoặc con
+        if (nodeList[parent] == nullptr) nodeList[parent] = new Node(parent);
+        if (nodeList[child] == nullptr) nodeList[child] = new Node(child);
+
+        // Lấy các con trỏ tới node cha và node con
+        Node* parentNode = nodeList[parent];
+        Node* childNode = nodeList[child];
+
+        // Kết nối node con với cha
+        if (parentNode->firstChild == nullptr) {
+            parentNode->firstChild = childNode;  // Nếu node cha chưa có con, gán con vào
+        }
+        else {
+            // Nếu node cha đã có con, tìm anh/em của con
+            Node* sibling = parentNode->firstChild;
+            while (sibling->nextSibling != nullptr) {
+                sibling = sibling->nextSibling;  // Duyệt qua tất cả anh/em của con
+            }
+            sibling->nextSibling = childNode;  // Gán con vào vị trí anh/em cuối cùng
+        }
+
+        isChild[child] = true;  // Đánh dấu rằng node con đã có cha
+        updateRoot();  // Cập nhật lại gốc nếu cần
+    }
+
+    // Hàm tính chiều cao của cây (đệ quy)
+    int height(Node* node) {
+        if (node == nullptr) return 0;  // Trường hợp cơ sở: node rỗng, chiều cao là 0
+        int maxDepth = 0;
+        Node* child = node->firstChild;  // Truy cập con đầu tiên
+        while (child != nullptr) {
+            // Tính chiều cao của tất cả các con và lấy chiều cao lớn nhất
+            maxDepth = max(maxDepth, height(child));
+            child = child->nextSibling;  // Duyệt qua anh/em của con
+        }
+        return maxDepth + 1;  // Trả về chiều cao của node, cộng thêm 1 cho node hiện tại
+    }
+
+    // Hàm duyệt cây theo thứ tự PreOrder (root -> left -> right)
+    void preOrder(Node* node) {
+        if (node == nullptr) return;  // Trường hợp cơ sở: nếu node rỗng, thoát
+        cout << node->data << " ";  // In dữ liệu của node hiện tại
+        preOrder(node->firstChild);  // Duyệt con đầu tiên
+        preOrder(node->nextSibling);  // Duyệt qua anh/em của node
+    }
+
+    // Hàm duyệt cây theo thứ tự PostOrder (left -> right -> root)
+    void postOrder(Node* node) {
+        if (node == nullptr) return;  // Trường hợp cơ sở: nếu node rỗng, thoát
+        Node* child = node->firstChild;
+        while (child != nullptr) {
+            postOrder(child);  // Duyệt tất cả các con của node
+            child = child->nextSibling;  // Duyệt qua các anh/em của node
+        }
+        cout << node->data << " ";  // In dữ liệu của node sau khi duyệt hết các con
+    }
+
+    // Hàm kiểm tra xem cây có phải là cây nhị phân hay không
+    bool isBinaryTree(Node* node) {
+        if (node == nullptr) return true;  // Trường hợp cơ sở: nếu node rỗng, cây là cây nhị phân
+        Node* child = node->firstChild;
+        int cnt = 0;  // Đếm số lượng con của node
+        while (child != nullptr) {
+            cnt++;  // Tăng số lượng con
+            if (!isBinaryTree(child)) return false;  // Nếu cây con không phải là cây nhị phân, trả về false
+            child = child->nextSibling;  // Duyệt qua các anh/em của node
+        }
+        return cnt <= 2;  // Nếu số lượng con lớn hơn 2, cây không phải là cây nhị phân
+    }
+
+    // Hàm duyệt cây theo thứ tự InOrder (left -> root -> right)
+    void inOrder(Node* node) {
+        if (node == nullptr) return;  // Trường hợp cơ sở: nếu node rỗng, thoát
+        if (node->firstChild != nullptr) inOrder(node->firstChild);  // Duyệt con trái trước
+        cout << node->data << " ";  // In dữ liệu của node hiện tại
+        if (node->firstChild != nullptr) inOrder(node->firstChild->nextSibling);  // Duyệt qua anh/em của con
+    }
+};
+
+int main() {
+    int n, m;
+    cin >> n >> m;  // Đọc vào số lượng node (n) và số lượng cạnh (m)
+    Tree tree;  // Tạo đối tượng cây mới
+    for (int i = 0; i < m; i++) {
+        int parent, child;
+        cin >> parent >> child;  // Đọc vào các cặp cha-con
+        tree.addNode(parent, child);  // Thêm node vào cây
+    }
+    cout << tree.height(tree.root) - 1 << endl;  // In chiều cao của cây (subtract 1 vì height tính từ node gốc)
+    tree.preOrder(tree.root); cout << endl;  // In ra kết quả duyệt theo PreOrder
+    tree.postOrder(tree.root); cout << endl;  // In ra kết quả duyệt theo PostOrder
+    if (tree.isBinaryTree(tree.root)) {  // Nếu cây là cây nhị phân
+        tree.inOrder(tree.root);  // In kết quả duyệt theo InOrder
+        cout << endl;
+    }
+    else {
+        cout << "NOT BINARY TREE";  // Nếu không phải cây nhị phân, in thông báo
+    }
+    return 0;
+}
