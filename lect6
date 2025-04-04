@@ -1,0 +1,178 @@
+1.
+#include <iostream>
+using namespace std;
+
+struct Node {
+    int data;
+    Node* left;
+    Node* right;
+    Node(int val) {
+        data = val;
+        left = nullptr;
+        right = nullptr;
+    }
+};
+
+Node* Insert(Node* node, int key) {
+    // TH cơ sở
+    if (node == nullptr) return new Node(key);
+    // nếu key < node->data thì thêm vào cây con bên trái, ngược lại thêm vào cây con bên phải
+    if (key < node->data) node->left = Insert(node->left, key);
+    else if (key > node->data) node->right = Insert(node->right, key);
+    return node;
+}
+// Duyệt cây theo thứ tự inorder (trái - gốc - phải)
+void Inorder(Node* node) {
+    if (node == nullptr) return;
+    Inorder(node->left);
+    cout << node->data << " ";
+    Inorder(node->right);
+}
+// lấy data của leaf bé nhất bên phải node đang xét
+Node* findMin(Node* cur) {
+    cur = cur->right;
+    while (cur != nullptr && cur->left != nullptr) {
+        cur = cur->left;
+    }
+    return cur;
+}
+Node* Delete(Node* node, int key) {
+    if (node == nullptr) return node;
+    // nếu key < node->data thì duyệt bên trái và ngược lại 
+    if (key < node->data) node->left = Delete(node->left, key);
+    else if (key > node->data) node->right = Delete(node->right, key);
+    else {
+        // TH có 1 con thì xóa node bố và trả về con còn lại 
+        if (node->left == nullptr) {
+            Node* temp = node->right;
+            delete node;
+            return temp;
+        }
+        else if (node->right == nullptr) {
+            Node* temp = node->left;
+            delete node;
+            return temp;
+        }
+        // TH có 2 con 
+        // lấy data của lá bé nhất bên phải của Node đang xét (most left child of right subtree)
+        Node* temp = findMin(node);
+        node->data = temp->data;
+        // xóa node lá trong cây con bên phải
+        node->right = Delete(node->right, temp->data);
+    }
+    return node;
+}
+
+int main() {
+    int n; // số lượng phần tử trong cây
+    cin >> n;
+    Node* root = nullptr;
+    for (int i = 0; i < n; i++) {
+        int x;
+        cin >> x;
+        root = Insert(root, x);
+    }
+    Inorder(root); cout << endl;
+    cin >> n; // số lượng phần tử cần xóa
+    for (int i = 0; i < n; i++) {
+        int x;
+        cin >> x;
+        root = Delete(root, x);
+    }
+
+    return 0;
+}
+
+2.
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class minHeap {
+private:
+    //cài đặt minHeap bằng mảng
+    vector<int> heap;
+    // nếu con là i thì bố là (i - 1) / 2
+    int parent(int i) { return (i - 1) / 2; }
+    // nếu bố là i thì con trái là 2*i + 1, con phải là 2*i + 2
+    int left(int i) { return 2 * i + 1; }
+    int right(int i) { return 2 * i + 2; }
+    // hàm đảm bảo tính chất con bé hơn cha
+    void heapifyUp(int i) {
+        while (i > 0 && heap[i] < heap[parent(i)]) {
+            swap(heap[i], heap[parent(i)]);
+            i = parent(i);
+        }
+    }
+    // hàm đảm báo tính chất con bé hơn cha
+    void heapifyDown(int i) {
+        int smallest = i;
+        int l = left(i);
+        int r = right(i);
+        // tìm con bé nhất
+        if (l < heap.size() && heap[l] < heap[smallest])
+            smallest = l;
+        if (r < heap.size() && heap[r] < heap[smallest])
+            smallest = r;
+        // đổi chỗ con bé nhất và bố
+        if (smallest != i) {
+            swap(heap[i], heap[smallest]);
+            heapifyDown(smallest);
+        }
+    }
+public:
+    void Insert(int key) {
+        heap.push_back(key);
+        int keyPos = heap.size() - 1;
+        heapifyUp(keyPos);
+    }
+    void Delete(int key) {
+        // Tìm vị trí của key trong heap
+        int index = -1;
+        for (int i = 0; i < heap.size(); i++) {
+            if (heap[i] == key) {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) return;
+        
+        // Thay thế key bằng phần tử cuối cùng trong heap
+        heap[index] = heap.back();
+        // Xóa phần tử cuối cùng
+        heap.pop_back();
+        
+        if (!heap.empty() && index < heap.size()) {
+            if (index > 0 && heap[index] < heap[parent(index)])
+                heapifyUp(index);
+            else
+                heapifyDown(index);
+        }
+    }
+    void Print() {
+        for (auto data : heap) {
+            cout << data << " ";
+        }
+    }
+};
+
+int main() {
+    int n;
+    cout << "Enter number of insert value: ";
+    cin >> n;
+    minHeap minHeap;
+    for (int i = 0; i < n; i++){
+        int x; cin >> x;
+        minHeap.Insert(x);
+    }
+    minHeap.Print();
+    cout << endl;
+    cout << "Enter number of delete value: ";
+    cin >> n;
+    for (int i = 0; i < n; i++){
+        int x; cin >> x;
+        minHeap.Delete(x);
+    }
+
+    return 0;
+}
